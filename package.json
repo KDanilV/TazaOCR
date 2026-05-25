@@ -1,0 +1,13 @@
+{
+  "name": "ocr-scan-tables",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check app.js",
+    "test": "node --test tests/*.test.mjs",
+    "quality:actual": "node scripts/run-browser-quality.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.54.0"
+  }
+}

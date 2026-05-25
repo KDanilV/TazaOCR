@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OCR Scan Tables - распознавание таблиц</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>OCR Scan Tables</h1>
+          <p>Переносите таблицы со сканов, фото и PDF в редактируемый Excel.</p>
+        </div>
+        <div class="status" id="status">Готово</div>
+      </header>
+
+      <section class="workspace" aria-label="Рабочая область OCR">
+        <aside class="panel controls">
+          <label class="upload-box" for="imageInput">
+            <span class="upload-title">Выберите скан</span>
+            <span class="upload-meta" id="fileName">PDF, PNG, JPG, WEBP</span>
+          </label>
+          <input id="imageInput" type="file" accept="application/pdf,image/png,image/jpeg,image/webp,image/bmp">
+
+          <label class="field">
+            <span>Язык OCR</span>
+            <select id="languageSelect">
+              <option value="rus" selected>Русский</option>
+              <option value="rus+eng">Русский + английский</option>
+              <option value="eng">Английский</option>
+              <option value="eng+rus">Английский + русский</option>
+            </select>
+          </label>
+
+          <label class="field" id="pdfPageField" hidden>
+            <span>Страница PDF</span>
+            <select id="pdfPageSelect"></select>
+          </label>
+
+          <div class="button-row">
+            <button id="rotateLeftButton" type="button" disabled>Повернуть влево</button>
+            <button id="rotateRightButton" type="button" disabled>Повернуть вправо</button>
+          </div>
+
+          <label class="field">
+            <span>Порог ч/б <output id="thresholdValue">185</output></span>
+            <input id="thresholdInput" type="range" min="80" max="235" value="185" step="1" disabled>
+          </label>
+
+          <label class="field">
+            <span>Доворот <output id="deskewValue">0.0°</output></span>
+            <input id="deskewInput" type="range" min="-6" max="6" value="0" step="0.25" disabled>
+          </label>
+
+          <button id="useSelectionButton" type="button" disabled>Использовать выделение</button>
+          <button id="perspectiveModeButton" type="button" disabled>Режим перспективы</button>
+          <button id="applyPerspectiveButton" type="button" disabled>Исправить перспективу</button>
+          <button id="resetScanButton" type="button" disabled>Сбросить скан</button>
+          <button id="preprocessButton" type="button" disabled>Выровнять и найти сетку</button>
+          <button id="recognizeTableButton" type="button" disabled>Распознать таблицу</button>
+          <button id="recognizeButton" type="button" disabled>Распознать текст</button>
+          <button id="exportButton" type="button" disabled>Скачать XLSX</button>
+
+          <div class="progress-wrap" aria-label="Прогресс OCR">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <p class="hint" id="progressText">Загрузите скан, чтобы начать.</p>
+
+          <section class="guide-panel" aria-label="Инструкция">
+            <h2>Как пользоваться</h2>
+            <ol>
+              <li>Загрузите фото, скан или PDF. Для PDF выберите нужную страницу.</li>
+              <li>Если таблица занимает не весь лист, выделите область мышью и нажмите «Использовать выделение».</li>
+              <li>Для фото под углом включите «Режим перспективы», отметьте 4 угла таблицы или листа и примените исправление.</li>
+              <li>Настройте порог ч/б и доворот, затем нажмите «Выровнять и найти сетку».</li>
+              <li>Проверьте зелёную разметку ячеек, нажмите «Распознать таблицу», исправьте ошибки вручную и скачайте XLSX.</li>
+            </ol>
+            <p>Распознавание всегда черновое. Ручное выделение, перспектива, доворот и порог могут как улучшить, так и ухудшить результат: если стало хуже, нажмите «Сбросить скан» и попробуйте более простой вариант.</p>
+            <p>Если сетка таблицы не находится или разбивка кривая, используйте «Распознать текст» как запасной режим и перенесите данные после ручной проверки.</p>
+          </section>
+        </aside>
+
+        <section class="preview-area">
+          <div class="panel image-panel">
+            <div class="panel-heading">
+              <h2>Предпросмотр скана</h2>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="imageCanvas"></canvas>
+              <div class="grid-overlay" id="gridOverlay" hidden></div>
+              <div class="corner-overlay" id="cornerOverlay" hidden></div>
+              <div class="selection-box" id="selectionBox" hidden></div>
+              <p id="emptyCanvas">Изображение не выбрано</p>
+            </div>
+          </div>
+
+          <div class="panel result-panel">
+            <div class="panel-heading">
+              <h2>Результат OCR</h2>
+            </div>
+            <div class="editor-toolbar" id="editorToolbar" hidden>
+              <button id="insertRowButton" type="button" disabled>Добавить строку</button>
+              <button id="deleteRowButton" type="button" disabled>Удалить строку</button>
+              <button id="insertColumnButton" type="button" disabled>Добавить столбец</button>
+              <button id="deleteColumnButton" type="button" disabled>Удалить столбец</button>
+              <button id="mergeRightButton" type="button" disabled>Объединить вправо</button>
+              <button id="mergeDownButton" type="button" disabled>Объединить вниз</button>
+              <button id="splitCellButton" type="button" disabled>Разделить ячейку</button>
+            </div>
+            <div class="table-wrap" id="tableWrap" hidden></div>
+            <textarea id="ocrOutput" spellcheck="false" placeholder="Здесь появится распознанный текст. Табличный результат можно редактировать перед экспортом."></textarea>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module">
+      import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+
+      window.pdfjsLib = pdfjsLib;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
