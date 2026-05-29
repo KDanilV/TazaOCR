@@ -1,4 +1,4 @@
-# OCR Scan Tables
+# TazaOCR
 
 Free browser app for moving tables from scanned images, photos, and PDF pages into editable Excel files.
 
@@ -19,7 +19,7 @@ The public repository intentionally contains only the browser-based scanner. Loc
 Download or clone the repository, then run:
 
 ```text
-OCRscanTables.exe
+TazaOCR.exe
 ```
 
 The launcher starts a local server and opens the app in the browser. Keep the console window open while using the app. Close it to stop the service.
@@ -92,7 +92,7 @@ npm test
 Build the Windows launcher if you need to regenerate it:
 
 ```powershell
-C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /target:exe /out:OCRscanTables.exe tools\launcher\Program.cs
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /target:exe /out:TazaOCR.exe tools\launcher\Program.cs
 ```
 
 ## Local Experiments

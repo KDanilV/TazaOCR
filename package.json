@@ -1,5 +1,5 @@
 {
-  "name": "ocr-scan-tables",
+  "name": "taza-ocr",
   "private": true,
   "type": "module",
   "scripts": {

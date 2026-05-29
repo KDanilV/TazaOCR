@@ -13,8 +13,8 @@ internal static class Program
 
         if (!File.Exists(indexPath))
         {
-            Console.Error.WriteLine("index.html was not found next to OCRscanTables.exe.");
-            Console.Error.WriteLine("Put OCRscanTables.exe in the project folder and run it again.");
+            Console.Error.WriteLine("index.html was not found next to TazaOCR.exe.");
+            Console.Error.WriteLine("Put TazaOCR.exe in the project folder and run it again.");
             return 1;
         }
 
@@ -27,7 +27,7 @@ internal static class Program
                 listener.Prefixes.Add(prefix);
                 listener.Start();
 
-                Console.WriteLine("OCR Scan Tables is running.");
+                Console.WriteLine("TazaOCR is running.");
                 Console.WriteLine(prefix);
                 Console.WriteLine("Close this window to stop the local service.");
                 OpenBrowser(prefix);
