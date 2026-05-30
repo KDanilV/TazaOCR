@@ -40,7 +40,7 @@ print(json.dumps(summary_to_json(summary), ensure_ascii=False))
   assert.ok(payload.errorBreakdown.merge_split_issue >= 1);
   assert.ok(payload.errorBreakdown.cyrillic_ocr_garbage >= 1);
   assert.equal(payload.errorBreakdown.extra_row, 1);
-  assert.ok(payload.topErrors.some((error) => error.row === 2 && error.column === 3 && error.expected === "45"));
+  assert.ok(payload.topErrors.some((error) => error.category === "missing_numeric_value" && error.row === 2 && error.column === 3));
   assert.ok(payload.topErrors.some((error) => error.category === "cyrillic_ocr_garbage" && error.row === 1 && error.column === 2));
 });
 
@@ -62,15 +62,31 @@ print(json.dumps(summary_to_json(summary), ensure_ascii=False))
   assert.equal(payload.topErrors[0].column, 1);
 });
 
+test("quotes CSV report fields", { skip: !canRunPythonClassifier }, () => {
+  const output = runPython(`
+summary = classify_sheet("scan, page 1", [["a"]], [["b"]], top_error_limit=1)
+print_csv_report([summary])
+`);
+
+  assert.match(output, /^file,totalComparedCells,exactMatches,mismatchCount,suspectedMainCause,/);
+  assert.match(output, /"scan, page 1",1,0,1,ocr_text_error,/);
+});
+
 function runPythonClassifier(body) {
+  return JSON.parse(runPython(`
+${body}
+`));
+}
+
+function runPython(body) {
   const code = `
 import json
 import sys
 sys.path.insert(0, "scripts")
-from compare_error_taxonomy import classify_sheet, summary_to_json
+from compare_error_taxonomy import classify_sheet, print_csv_report, summary_to_json
 ${body}
 `;
-  return JSON.parse(execFileSync(python, ["-c", code], { encoding: "utf8" }));
+  return execFileSync(python, ["-c", code], { encoding: "utf8" });
 }
 
 function findPython() {

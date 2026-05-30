@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
 import sys
@@ -45,6 +46,20 @@ STRUCTURE_CATEGORIES = {
     "empty_cell_shift",
 }
 DEFAULT_TOP_ERROR_LIMIT = 8
+TOP_ERROR_PRIORITY = (
+    "missing_numeric_value",
+    "cyrillic_ocr_garbage",
+    "wrong_row",
+    "wrong_column",
+    "merge_split_issue",
+    "empty_cell_shift",
+    "missing_row",
+    "extra_row",
+    "missing_cell",
+    "extra_cell",
+    "ocr_text_error",
+    "unknown",
+)
 
 
 @dataclass(frozen=True)
@@ -159,7 +174,14 @@ def classify_sheet(
             add_error(
                 top_errors,
                 top_error_limit,
-                build_cell_error(categories[0], row_index, col_index, expected_value, actual_value, actual_locations),
+                build_cell_error(
+                    top_error_category(categories),
+                    row_index,
+                    col_index,
+                    expected_value,
+                    actual_value,
+                    actual_locations,
+                ),
             )
 
     return SheetErrorSummary(
@@ -457,6 +479,10 @@ def suspected_main_cause(breakdown: dict[str, int]) -> str:
     return sorted(non_zero, key=lambda item: (-item[1], ERROR_CATEGORIES.index(item[0])))[0][0]
 
 
+def top_error_category(categories: list[str]) -> str:
+    return min(categories, key=lambda category: TOP_ERROR_PRIORITY.index(category))
+
+
 def print_report(summaries: list[SheetErrorSummary], report_format: str) -> None:
     if report_format == "csv":
         print_csv_report(summaries)
@@ -472,18 +498,24 @@ def summary_to_json(summary: SheetErrorSummary) -> dict:
 
 
 def print_csv_report(summaries: list[SheetErrorSummary]) -> None:
-    print(
-        "file,totalComparedCells,exactMatches,mismatchCount,suspectedMainCause,"
-        + ",".join(ERROR_CATEGORIES)
-        + ",status"
+    writer = csv.writer(sys.stdout, lineterminator="\n")
+    writer.writerow(
+        ["file", "totalComparedCells", "exactMatches", "mismatchCount", "suspectedMainCause"]
+        + list(ERROR_CATEGORIES)
+        + ["status"]
     )
     totals: Counter[str] = Counter()
     for summary in summaries:
-        print(
-            f"{summary.file},{summary.totalComparedCells},{summary.exactMatches},{summary.mismatchCount},"
-            f"{summary.suspectedMainCause},"
-            + ",".join(str(summary.errorBreakdown[category]) for category in ERROR_CATEGORIES)
-            + f",{summary.status}"
+        writer.writerow(
+            [
+                summary.file,
+                summary.totalComparedCells,
+                summary.exactMatches,
+                summary.mismatchCount,
+                summary.suspectedMainCause,
+            ]
+            + [summary.errorBreakdown[category] for category in ERROR_CATEGORIES]
+            + [summary.status]
         )
         totals.update(summary.errorBreakdown)
         totals["totalComparedCells"] += summary.totalComparedCells
@@ -491,11 +523,16 @@ def print_csv_report(summaries: list[SheetErrorSummary]) -> None:
         totals["mismatchCount"] += summary.mismatchCount
 
     overall_cause = suspected_main_cause({category: totals[category] for category in ERROR_CATEGORIES})
-    print(
-        f"overall,{totals['totalComparedCells']},{totals['exactMatches']},{totals['mismatchCount']},"
-        f"{overall_cause},"
-        + ",".join(str(totals[category]) for category in ERROR_CATEGORIES)
-        + ",summary"
+    writer.writerow(
+        [
+            "overall",
+            totals["totalComparedCells"],
+            totals["exactMatches"],
+            totals["mismatchCount"],
+            overall_cause,
+        ]
+        + [totals[category] for category in ERROR_CATEGORIES]
+        + ["summary"]
     )
 
 
